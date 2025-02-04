@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import "./Admin.css";
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD; // Use environment variable for admin password
+const ADMIN_PASSWORD = process.env.REACT_APP_ADMIN_PASSWORD; // Use environment variable for admin password
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -19,6 +19,10 @@ export default function Admin() {
     fetchPageDetails();
     fetchWebsiteTitle();
   }, []);
+
+  useEffect(() => {
+    document.title = websiteTitle; // Update the document title
+  }, [websiteTitle]);
 
   const handleLogin = () => {
     if (password === ADMIN_PASSWORD) {
@@ -164,7 +168,7 @@ export default function Admin() {
   return (
     <div className="admin-page">
       <h2>Admin Page</h2>
-      <div className="website-title-form">
+      <div className="page-details-form">
         <h3>Edit Website Title</h3>
         <input
           type="text"

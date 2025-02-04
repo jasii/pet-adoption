@@ -3,6 +3,10 @@ import sqlite3
 import os
 import requests
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__, static_folder="../build", static_url_path="/")
 
@@ -86,13 +90,20 @@ def adopt_pet():
         if cursor.fetchone():
             return jsonify({"error": "You have already adopted a pet"}), 400
 
+        cursor.execute("SELECT name FROM pets WHERE id = ?", (pet_id,))
+        pet = cursor.fetchone()
+        if not pet:
+            return jsonify({"error": "Pet not found"}), 404
+        pet_name = pet[0]
+
         cursor.execute("UPDATE pets SET adopted_by = ?, adopter_ip = ? WHERE id = ?", (adoptee_name, ip, pet_id))
         conn.commit()
 
         # Send Telegram notification
-        message = f"Pet: {pet_id} has been adopted by {adoptee_name} (IP: {ip})"
+        message = f"Pet: {pet_name} has been adopted by {adoptee_name} (IP: {ip})"
         telegram_webhook_url = f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/sendMessage"
         telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
+        import requests
         requests.post(telegram_webhook_url, json={"chat_id": telegram_chat_id, "text": message})
 
         response = jsonify({"message": "Pet adopted successfully"})
@@ -110,7 +121,7 @@ def add_animal():
     description = request.form["description"]
     image = request.files["image"]
     image_filename = secure_filename(image.filename)
-    image.save(os.path.join("../public/images", image_filename))
+    image.save(os.path.join("public/images", image_filename))
     image_url = f"/images/{image_filename}"
 
     with sqlite3.connect("pets.db") as conn:
@@ -136,7 +147,7 @@ def update_animal(id):
 
     if image:
         image_filename = secure_filename(image.filename)
-        image.save(os.path.join("../public/images", image_filename))
+        image.save(os.path.join("public/images", image_filename))
         image_url = f"/images/{image_filename}"
 
     with sqlite3.connect("pets.db") as conn:
@@ -152,9 +163,12 @@ def update_animal(id):
 def get_page_details():
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM page_details WHERE id = 1")
+        cursor.execute("SELECT title, description FROM page_details WHERE id = 1")
         page_details = cursor.fetchone()
-        return jsonify(page_details)
+        if page_details:
+            return jsonify({"title": page_details[0], "description": page_details[1]})
+        else:
+            return jsonify({"title": "", "description": ""})
 
 @app.route("/update-page-details", methods=["PUT"])
 def update_page_details():
@@ -172,9 +186,12 @@ def update_page_details():
 def get_website_title():
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM website_title WHERE id = 1")
+        cursor.execute("SELECT title FROM website_title WHERE id = 1")
         website_title = cursor.fetchone()
-        return jsonify(website_title)
+        if website_title:
+            return jsonify({"title": website_title[0]})
+        else:
+            return jsonify({"title": ""})
 
 @app.route("/update-website-title", methods=["PUT"])
 def update_website_title():

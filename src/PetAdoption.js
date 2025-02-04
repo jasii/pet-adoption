@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useWindowSize } from "react-use";
+import Confetti from "react-confetti";
 import "./App.css";
 
 export default function PetAdoption() {
@@ -10,20 +12,20 @@ export default function PetAdoption() {
   const [pageTitle, setPageTitle] = useState("");
   const [pageDescription, setPageDescription] = useState("");
   const [websiteTitle, setWebsiteTitle] = useState("");
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { width, height } = useWindowSize();
 
-  // Fetch user IP address
   useEffect(() => {
     fetch("http://localhost:5000/get-ip")
       .then((response) => response.json())
       .then((data) => setUserIp(data.ip))
       .catch((error) => console.error("Error fetching IP:", error));
 
-    // Fetch current adoption status
     fetch("http://localhost:5000/pets")
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         const adopted = {};
-        data.forEach(pet => {
+        data.forEach((pet) => {
           if (pet.adopted_by) {
             adopted[pet.id] = pet.adopted_by;
           }
@@ -33,7 +35,6 @@ export default function PetAdoption() {
       })
       .catch((error) => console.error("Error fetching adoption status:", error));
 
-    // Fetch page details
     fetch("http://localhost:5000/page-details")
       .then((response) => response.json())
       .then((data) => {
@@ -42,7 +43,6 @@ export default function PetAdoption() {
       })
       .catch((error) => console.error("Error fetching page details:", error));
 
-    // Fetch website title
     fetch("http://localhost:5000/website-title")
       .then((response) => response.json())
       .then((data) => {
@@ -53,16 +53,14 @@ export default function PetAdoption() {
 
   const handleAdoptClick = async (id) => {
     try {
-      // Check if IP has already adopted
-      console.log(userIp);
       const response = await fetch(`http://localhost:5000/check-adoption/${userIp}`);
       const data = await response.json();
-      
+
       if (data.hasAdopted) {
         alert("You have already adopted a pet");
         return;
       }
-      
+
       setShowForm((prev) => ({ ...prev, [id]: true }));
     } catch (error) {
       console.error("Error checking adoption status:", error);
@@ -75,28 +73,27 @@ export default function PetAdoption() {
       alert("Please enter your name to adopt.");
       return;
     }
-  
+
     try {
       const response = await fetch("http://localhost:5000/adopt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, adopteeName }),
       });
-  
-      const text = await response.text();  // Get the response as text
-      console.log(text);  // Log the response content
-      const data = JSON.parse(text);  // Parse the response as JSON
-  
+
+      const text = await response.text();
+      console.log(text);
+      const data = JSON.parse(text);
+
       if (!response.ok) {
         alert(data.error);
         return;
       }
-  
-      // Refresh adoption status
+
       const petsResponse = await fetch("http://localhost:5000/pets");
       const petsData = await petsResponse.json();
       const adopted = {};
-      petsData.forEach(pet => {
+      petsData.forEach((pet) => {
         if (pet.adopted_by) {
           adopted[pet.id] = pet.adopted_by;
         }
@@ -104,6 +101,8 @@ export default function PetAdoption() {
       setAdoptedPets(adopted);
       setShowForm((prev) => ({ ...prev, [id]: false }));
       setAdopteeName("");
+
+      setShowConfetti(true);
     } catch (error) {
       alert("Error adopting pet: " + error.message);
     }
@@ -115,11 +114,16 @@ export default function PetAdoption() {
 
   return (
     <div>
-      <h1>{websiteTitle}</h1>
-      <div className="description-section">
-        <h2>{pageTitle}</h2>
-        <p>{pageDescription}</p>
-      </div>
+      {showConfetti && (
+        <Confetti
+          width={width}
+          height={height}
+          numberOfPieces={400}
+          tweenDuration={10000}
+          gravity={0.03}
+          recycle={false}
+        />
+      )}
       <div className="grid-container">
         {pets.map((pet) => (
           <div key={pet.id} className={`card ${adoptedPets[pet.id] ? "adopted" : ""}`}>
