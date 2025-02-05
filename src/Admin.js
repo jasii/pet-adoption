@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import "./Admin.css";
 
 const ADMIN_PASSWORD = process.env.REACT_APP_ADMIN_PASSWORD; // Use environment variable for admin password
@@ -52,7 +53,9 @@ export default function Admin() {
     setWebsiteTitle(data.title);
   };
 
-  const handleAddAnimal = async () => {
+  const handleAddAnimal = async (e) => {
+    e.preventDefault(); // Prevent form submission from causing a page reload
+
     const formData = new FormData();
     formData.append("name", name);
     formData.append("description", description);
@@ -90,7 +93,9 @@ export default function Admin() {
     setImageFile(null);
   };
 
-  const handleUpdateAnimal = async () => {
+  const handleUpdateAnimal = async (e) => {
+    e.preventDefault(); // Prevent form submission from causing a page reload
+
     const formData = new FormData();
     formData.append("name", name);
     formData.append("description", description);
@@ -153,6 +158,7 @@ export default function Admin() {
   if (!isAuthenticated) {
     return (
       <div className="admin-login">
+        <Link to="/" className="back-link">Back to Home</Link>
         <h2>Admin Login</h2>
         <input
           type="password"
@@ -167,6 +173,7 @@ export default function Admin() {
 
   return (
     <div className="admin-page">
+      <Link to="/" className="back-link">Back to Home</Link>
       <h2>Admin Page</h2>
       <div className="page-details-form">
         <h3>Edit Website Title</h3>
@@ -195,28 +202,30 @@ export default function Admin() {
       </div>
       <div className="add-animal-form">
         <h3>{editAnimal ? "Edit Animal" : "Add Animal"}</h3>
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <input
-          type="text"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <input
-          type="file"
-          onChange={(e) => setImageFile(e.target.files[0])}
-        />
-        <button onClick={editAnimal ? handleUpdateAnimal : handleAddAnimal}>
-          {editAnimal ? "Update Animal" : "Add Animal"}
-        </button>
-        {editAnimal && (
-          <button onClick={() => setEditAnimal(null)}>Cancel</button>
-        )}
+        <form onSubmit={editAnimal ? handleUpdateAnimal : handleAddAnimal}>
+          <input
+            type="text"
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+          <input
+            type="text"
+            placeholder="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <input
+            type="file"
+            onChange={(e) => setImageFile(e.target.files[0])}
+          />
+          <button type="submit">
+            {editAnimal ? "Update Animal" : "Add Animal"}
+          </button>
+          {editAnimal && (
+            <button type="button" onClick={() => setEditAnimal(null)}>Cancel</button>
+          )}
+        </form>
       </div>
       <div className="animal-list">
         <h3>Animal List</h3>

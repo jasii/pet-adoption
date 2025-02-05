@@ -1,9 +1,32 @@
+/* Page container to set max-width */
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto; /* Center the container */
+  padding: 0 20px; /* Optional: Add some padding */
+}
+
 /* Grid layout for pet cards */
 .grid-container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 20px;
   padding: 20px;
+  max-width: 1200px; /* Set the maximum width */
+  margin: 0 auto; /* Center the grid container */
+}
+
+/* Adjust grid layout for medium screens */
+@media (max-width: 768px) {
+  .grid-container {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Adjust grid layout for small screens */
+@media (max-width: 480px) {
+  .grid-container {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Styling for each pet card */
@@ -15,6 +38,8 @@
   text-align: center;
   background: white;
   transition: 0.3s;
+  min-width: 250px;
+  max-width: 350px;
 }
 
 /* Style adopted pets to be slightly transparent */
@@ -95,4 +120,62 @@ button:hover {
 
 .description-section p {
   margin: 0;
+}
+
+.admin-link {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  color: lightgray;
+  text-decoration: none;
+}
+
+.admin-link:hover {
+  color: gray;
+}
+
+.main-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.description-section {
+  padding: 20px;
+  /* background-color: #f9f9f9; */
+  /* border-bottom: 1px solid #ddd; */
+}
+
+.pet-adoption-section {
+  padding-top: 0px;
+}
+
+.admin-link {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  color: lightgray;
+  text-decoration: none;
+}
+
+.admin-link:hover {
+  color: gray;
+}
+
+/* Media query for wider screens */
+@media (min-width: 1300px) {
+  .main-container {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .description-section {
+    flex: 1;
+    border-bottom: none;
+    /* border-right: 1px solid #ddd; */
+  }
+
+  .pet-adoption-section {
+    flex: 2;
+    padding-top: 30px;
+  }
 }

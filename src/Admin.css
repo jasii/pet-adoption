@@ -118,3 +118,14 @@
   .animal-list button:hover {
     background-color: #0056b3;
   }
+
+  .back-link {
+    display: block;
+    margin-bottom: 20px;
+    color: gray;
+    text-decoration: none;
+  }
+  
+  .back-link:hover {
+    color: gray;
+  }
