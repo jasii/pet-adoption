@@ -2,6 +2,9 @@ import { BrowserRouter as Router, Route, Routes, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import PetAdoption from "./PetAdoption";
 import Admin from "./Admin";
+import AnimalProfile from "./AnimalProfile";
+import CodeGenerator from "./CodeGenerator"; // Import the new component
+import ReactMarkdown from "react-markdown";
 import "./App.css"; // Import the CSS file
 
 function App() {
@@ -38,14 +41,21 @@ function App() {
     <Router>
       <Routes>
         <Route path="/admin" element={<Admin />} />
+        <Route path="/profile/:name" element={<AnimalProfile />} />
+        <Route path="/code-generator" element={<CodeGenerator />} /> {/* Add the new route */}
         <Route
           path="/"
           element={
             <div className="page-container">
               <div className="main-container">
                 <div className="description-section">
-                  <h2>{pageTitle}</h2>
-                  <p>{pageDescription}</p>
+                  <div class="logo-container">
+                    <div>
+                      <img src="/images/logo.png" alt="Logo" id="logo" />
+                    </div>
+                  </div>
+                  <ReactMarkdown>{pageTitle}</ReactMarkdown>
+                  <ReactMarkdown>{pageDescription}</ReactMarkdown>
                 </div>
                 <div className="pet-adoption-section">
                   <PetAdoption />

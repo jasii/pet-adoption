@@ -4,6 +4,7 @@ import os
 import requests
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+from datetime import datetime
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,23 +15,58 @@ app = Flask(__name__, static_folder="../build", static_url_path="/")
 def init_db():
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("CREATE TABLE IF NOT EXISTS pets (id INTEGER PRIMARY KEY, name TEXT, description TEXT, image TEXT, adopted_by TEXT, adopter_ip TEXT)")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pets (
+                id INTEGER PRIMARY KEY,
+                name TEXT UNIQUE,
+                description TEXT,
+                long_description TEXT,
+                image TEXT,
+                category TEXT,
+                adopted_by TEXT,
+                adopter_ip TEXT,
+                adopted_at TEXT
+            )
+        """)
         cursor.execute("CREATE TABLE IF NOT EXISTS page_details (id INTEGER PRIMARY KEY, title TEXT, description TEXT)")
         cursor.execute("CREATE TABLE IF NOT EXISTS website_title (id INTEGER PRIMARY KEY, title TEXT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS category_order (id INTEGER PRIMARY KEY, category TEXT UNIQUE, position INTEGER)")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS codes (
+                id INTEGER PRIMARY KEY,
+                name TEXT,
+                code TEXT,
+                use_count INTEGER DEFAULT 1
+            )
+        """)
+
+        # Add long_description column if it doesn't exist
+        cursor.execute("PRAGMA table_info(pets)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if "long_description" not in columns:
+            cursor.execute("ALTER TABLE pets ADD COLUMN long_description TEXT")
+
+        # Add use_count column to codes table if it doesn't exist
+        cursor.execute("PRAGMA table_info(codes)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if "use_count" not in columns:
+            cursor.execute("ALTER TABLE codes ADD COLUMN use_count INTEGER DEFAULT 1")
+
+        conn.commit()
 
         # Seed database with initial data
         cursor.execute("DELETE FROM pets")  # Clear existing data
 
         pets = [
-            (1, "Buddy", "Friendly dog looking for a home.", "/images/1.jpg"),
-            (2, "Luna", "A sweet pup who loves to cuddle.", "/images/2.png"),
-            (3, "Charlie", "Energetic and playful pup.", "/images/3.jpg"),
-            (4, "Max", "Loyal and loving dog.", "/images/4.png"),
-            (5, "Bella", "Gentle and affectionate good boy.", "/images/5.png"),
-            (6, "Lucy", "Playful and curious puppy.", "/images/6.jpg")
+            ("Buddy", "Friendly dog looking for a home.", "Buddy is a friendly dog who loves to play and is looking for a loving home.", "/images/1.jpg", "Dog"),
+            ("Luna", "A sweet pup who loves to cuddle.", "Luna is a sweet pup who loves to cuddle and is looking for a loving home.", "/images/2.png", "Dog"),
+            ("Charlie", "Energetic and playful pup.", "Charlie is an energetic and playful pup who is looking for a loving home.", "/images/3.jpg", "Dog"),
+            ("Max", "Loyal and loving dog.", "Max is a loyal and loving dog who is looking for a loving home.", "/images/4.png", "Dog"),
+            ("Bella", "Gentle and affectionate good boy.", "Bella is a gentle and affectionate good boy who is looking for a loving home.", "/images/5.png", "Dog"),
+            ("Lucy", "Playful and curious puppy.", "Lucy is a playful and curious puppy who is looking for a loving home.", "/images/6.jpg", "Dog")
         ]
 
-        cursor.executemany("INSERT INTO pets (id, name, description, image) VALUES (?, ?, ?, ?)", pets)
+        cursor.executemany("INSERT INTO pets (name, description, long_description, image, category) VALUES (?, ?, ?, ?, ?)", pets)
 
         cursor.execute("SELECT COUNT(*) FROM page_details")
         if cursor.fetchone()[0] == 0:
@@ -40,11 +76,22 @@ def init_db():
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO website_title (title) VALUES (?)", ("Pet Adoption Site",))
 
+        # Seed category_order table with initial data
+        cursor.execute("DELETE FROM category_order")  # Clear existing data
+        categories = ["Dog", "Cat", "Bird", "Rabbit", "Fish"]
+        for index, category in enumerate(categories):
+            cursor.execute("INSERT INTO category_order (category, position) VALUES (?, ?)", (category, index))
+
 init_db()
 
 @app.route("/")
 def serve():
     return send_from_directory(app.static_folder, "index.html")
+
+@app.route("/init-db", methods=["GET"])
+def initialize_database():
+    init_db()
+    return "Database initialized", 200
 
 @app.route("/<path:path>")
 def static_proxy(path):
@@ -54,20 +101,67 @@ def static_proxy(path):
 def get_pets():
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, name, description, image, adopted_by, adopter_ip FROM pets")
+        cursor.execute("SELECT * FROM pets")
         pets = cursor.fetchall()
         pets_list = [
             {
                 "id": pet[0],
                 "name": pet[1],
                 "description": pet[2],
-                "image": pet[3],
-                "adopted_by": pet[4],
-                "adopter_ip": pet[5]
+                "long_description": pet[3],
+                "image": pet[4],
+                "category": pet[5],
+                "adopted_by": pet[6],
+                "adopter_ip": pet[7],
+                "adopted_at": pet[8]
             }
             for pet in pets
         ]
         return jsonify(pets_list)
+
+@app.route("/pets/<int:id>", methods=["GET"])
+def get_pet_by_id(id):
+    with sqlite3.connect("pets.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM pets WHERE id = ?", (id,))
+        pet = cursor.fetchone()
+        if pet:
+            pet_data = {
+                "id": pet[0],
+                "name": pet[1],
+                "description": pet[2],
+                "long_description": pet[3],
+                "image": pet[4],
+                "category": pet[5],
+                "adopted_by": pet[6],
+                "adopter_ip": pet[7],
+                "adopted_at": pet[8]
+            }
+            return jsonify(pet_data)
+        else:
+            return jsonify({"error": "Pet not found"}), 404
+
+@app.route("/pets/<name>", methods=["GET"])
+def get_pet(name):
+    with sqlite3.connect("pets.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM pets WHERE name = ?", (name,))
+        pet = cursor.fetchone()
+        if pet:
+            pet_data = {
+                "id": pet[0],
+                "name": pet[1],
+                "description": pet[2],
+                "long_description": pet[3],
+                "image": pet[4],
+                "category": pet[5],
+                "adopted_by": pet[6],
+                "adopter_ip": pet[7],
+                "adopted_at": pet[8]
+            }
+            return jsonify(pet_data)
+        else:
+            return jsonify({"error": "Pet not found"}), 404
 
 @app.route("/check-adoption/<ip>", methods=["GET"])
 def check_adoption(ip):
@@ -80,33 +174,44 @@ def check_adoption(ip):
 @app.route("/adopt", methods=["POST"])
 def adopt_pet():
     data = request.json
-    pet_id = data["id"]
+    pet_name = data["name"]
     adoptee_name = data["adopteeName"]
+    adoption_code = data["adoptionCode"]
     ip = request.remote_addr
+    adopted_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM pets WHERE adopter_ip = ?", (ip,))
-        if cursor.fetchone():
-            return jsonify({"error": "You have already adopted a pet"}), 400
+        # cursor.execute("SELECT * FROM pets WHERE adopter_ip = ?", (ip,))
+        # if cursor.fetchone():
+        #     return jsonify({"error": "You have already adopted a pet"}), 400
 
-        cursor.execute("SELECT name FROM pets WHERE id = ?", (pet_id,))
+        cursor.execute("SELECT name FROM pets WHERE name = ?", (pet_name,))
         pet = cursor.fetchone()
         if not pet:
             return jsonify({"error": "Pet not found"}), 404
-        pet_name = pet[0]
 
-        cursor.execute("UPDATE pets SET adopted_by = ?, adopter_ip = ? WHERE id = ?", (adoptee_name, ip, pet_id))
+        cursor.execute("SELECT * FROM codes WHERE code = ?", (adoption_code,))
+        code = cursor.fetchone()
+        if not code:
+            return jsonify({"error": "Invalid adoption code"}), 400
+
+        use_count = code[3]  # Assuming use_count is the fourth column in the codes table
+        if use_count is None or use_count <= 0:
+            return jsonify({"error": "Adoption code has been used up"}), 400
+
+        cursor.execute("UPDATE codes SET use_count = use_count - 1 WHERE code = ?", (adoption_code,))
+        cursor.execute("UPDATE pets SET adopted_by = ?, adopter_ip = ?, adopted_at = ? WHERE name = ?", (adoptee_name, ip, adopted_at, pet_name))
         conn.commit()
 
         # Send Telegram notification
         message = f"Pet: {pet_name} has been adopted by {adoptee_name} (IP: {ip})"
         telegram_webhook_url = f"https://api.telegram.org/bot{os.getenv('TELEGRAM_BOT_TOKEN')}/sendMessage"
         telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID")
-        import requests
+
         requests.post(telegram_webhook_url, json={"chat_id": telegram_chat_id, "text": message})
 
-        response = jsonify({"message": "Pet adopted successfully"})
+        response = jsonify({"message": "Pet adopted successfully", "adopted_at": adopted_at})
         print(response.get_data(as_text=True))  # Log the response content
         return response
 
@@ -119,6 +224,8 @@ def get_ip():
 def add_animal():
     name = request.form["name"]
     description = request.form["description"]
+    long_description = request.form["long_description"]
+    category = request.form["category"]
     image = request.files["image"]
     image_filename = secure_filename(image.filename)
     image.save(os.path.join("public/images", image_filename))
@@ -126,7 +233,7 @@ def add_animal():
 
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO pets (name, description, image) VALUES (?, ?, ?)", (name, description, image_url))
+        cursor.execute("INSERT INTO pets (name, description, long_description, image, category) VALUES (?, ?, ?, ?, ?)", (name, description, long_description, image_url, category))
         conn.commit()
         return jsonify({"id": cursor.lastrowid})
 
@@ -142,6 +249,8 @@ def remove_animal(id):
 def update_animal(id):
     name = request.form["name"]
     description = request.form["description"]
+    long_description = request.form["long_description"]
+    category = request.form["category"]
     image = request.files.get("image")
     image_url = None
 
@@ -153,9 +262,9 @@ def update_animal(id):
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
         if image_url:
-            cursor.execute("UPDATE pets SET name = ?, description = ?, image = ? WHERE id = ?", (name, description, image_url, id))
+            cursor.execute("UPDATE pets SET name = ?, description = ?, long_description = ?, image = ?, category = ? WHERE id = ?", (name, description, long_description, image_url, category, id))
         else:
-            cursor.execute("UPDATE pets SET name = ?, description = ? WHERE id = ?", (name, description, id))
+            cursor.execute("UPDATE pets SET name = ?, description = ?, long_description = ?, category = ? WHERE id = ?", (name, description, long_description, category, id))
         conn.commit()
         return jsonify({"updated": cursor.rowcount})
 
@@ -203,14 +312,91 @@ def update_website_title():
         cursor.execute("UPDATE website_title SET title = ? WHERE id = 1", (title,))
         conn.commit()
         return jsonify({"updated": cursor.rowcount})
+    
+@app.route("/add-category", methods=["POST"])
+def add_category():
+    data = request.json
+    category = data["category"]
+
+    with sqlite3.connect("pets.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO pets (category) VALUES (?)", (category,))
+        conn.commit()
+        return jsonify({"message": "Category added successfully"})
+    
+@app.route("/categories", methods=["GET"])
+def get_categories():
+    with sqlite3.connect("pets.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT category FROM category_order ORDER BY position")
+        categories = [row[0] for row in cursor.fetchall()]
+        return jsonify(categories)
+
+@app.route("/update-category-order", methods=["PUT"])
+def update_category_order():
+    data = request.json
+    categories = data["categories"]
+
+    with sqlite3.connect("pets.db") as conn:
+        cursor = conn.cursor()
+        for index, category in enumerate(categories):
+            cursor.execute("UPDATE category_order SET position = ? WHERE category = ?", (index, category))
+        conn.commit()
+        return jsonify({"message": "Category order updated successfully"})
 
 @app.route("/unadopt-animal/<int:id>", methods=["PUT"])
 def unadopt_animal(id):
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("UPDATE pets SET adopted_by = NULL, adopter_ip = NULL WHERE id = ?", (id,))
+        cursor.execute("UPDATE pets SET adopted_by = NULL, adopter_ip = NULL, adopted_at = NULL WHERE id = ?", (id,))
         conn.commit()
         return jsonify({"updated": cursor.rowcount})
+
+@app.route("/delete-category/<category>", methods=["DELETE"])
+def delete_category(category):
+    with sqlite3.connect("pets.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM category_order WHERE category = ?", (category,))
+        conn.commit()
+        return jsonify({"message": "Category deleted successfully"})
+    
+@app.route("/codes", methods=["GET"])
+def get_codes():
+    with sqlite3.connect("pets.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM codes")
+        codes = cursor.fetchall()
+        codes_list = [
+            {
+                "id": code[0],
+                "name": code[1],
+                "code": code[2],
+                "use_count": code[3]  # Include use_count in the response
+            }
+            for code in codes
+        ]
+        return jsonify(codes_list)
+
+@app.route("/add-code", methods=["POST"])
+def add_code():
+    data = request.json
+    name = data["name"]
+    code = data["code"]
+    use_count = data.get("useCount", 1)  # Get useCount from the request, default to 1 if not provided
+
+    with sqlite3.connect("pets.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO codes (name, code, use_count) VALUES (?, ?, ?)", (name, code, use_count))
+        conn.commit()
+        return jsonify({"id": cursor.lastrowid})
+    
+@app.route("/delete-code/<int:code_id>", methods=["DELETE"])
+def delete_code(code_id):
+    with sqlite3.connect("pets.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM codes WHERE id = ?", (code_id,))
+        conn.commit()
+        return jsonify({"deleted": cursor.rowcount})
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))

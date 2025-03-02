@@ -1,19 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { useWindowSize } from "react-use";
 import Confetti from "react-confetti";
+import { Link } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
 import "./App.css";
+
+const colors = ['#f7a5a3', '#a5f7d1', '#a5a3f7', '#f7e3a5', '#f7a5e3', '#a3f7a5', '#d1a5f7', '#f7d1a5'];
+
+function getColor(index) {
+  return colors[index % colors.length];
+}
+
+export const formatDate = (dateString) => {
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return new Date(dateString).toLocaleDateString(undefined, options);
+};
 
 export default function PetAdoption() {
   const [adoptedPets, setAdoptedPets] = useState({});
-  const [showForm, setShowForm] = useState({});
+  const [showForm, setShowForm] = useState(""); // Change to store a single string value
   const [adopteeName, setAdopteeName] = useState("");
   const [userIp, setUserIp] = useState("");
   const [pets, setPets] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [pageTitle, setPageTitle] = useState("");
   const [pageDescription, setPageDescription] = useState("");
   const [websiteTitle, setWebsiteTitle] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const { width, height } = useWindowSize();
+  const [adoptionCode, setAdoptionCode] = useState('');
 
   useEffect(() => {
     fetch("http://localhost:5000/get-ip")
@@ -27,7 +42,7 @@ export default function PetAdoption() {
         const adopted = {};
         data.forEach((pet) => {
           if (pet.adopted_by) {
-            adopted[pet.id] = pet.adopted_by;
+            adopted[pet.name] = { adopted_by: pet.adopted_by, adopted_at: pet.adopted_at };
           }
         });
         setAdoptedPets(adopted);
@@ -36,7 +51,7 @@ export default function PetAdoption() {
       .catch((error) => console.error("Error fetching adoption status:", error));
 
     fetch("http://localhost:5000/page-details")
-      .then((response) => response.json())
+      .then((res) => res.json())
       .then((data) => {
         setPageTitle(data.title);
         setPageDescription(data.description);
@@ -44,73 +59,56 @@ export default function PetAdoption() {
       .catch((error) => console.error("Error fetching page details:", error));
 
     fetch("http://localhost:5000/website-title")
-      .then((response) => response.json())
-      .then((data) => {
-        setWebsiteTitle(data.title);
-      })
+      .then((res) => res.json())
+      .then((data) => setWebsiteTitle(data.title))
       .catch((error) => console.error("Error fetching website title:", error));
+
+    fetch("http://localhost:5000/categories")
+      .then((res) => res.json())
+      .then((data) => setCategories(data))
+      .catch((error) => console.error("Error fetching categories:", error));
   }, []);
 
-  const handleAdoptClick = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:5000/check-adoption/${userIp}`);
-      const data = await response.json();
-
-      if (data.hasAdopted) {
-        alert("You have already adopted a pet");
-        return;
-      }
-
-      setShowForm((prev) => ({ ...prev, [id]: true }));
-    } catch (error) {
-      console.error("Error checking adoption status:", error);
-      alert("Error checking adoption status. Please try again.");
-    }
+  const handleAdoptClick = async (name) => {
+    setShowForm(name); // Set the name of the pet whose form is open
   };
 
-  const handleAdoptSubmit = async (id, petName) => {
-    if (!adopteeName.trim()) {
-      alert("Please enter your name to adopt.");
-      return;
-    }
-
+  const handleAdoptSubmit = async (name) => {
     try {
       const response = await fetch("http://localhost:5000/adopt", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, adopteeName }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, adopteeName, adoptionCode }),
       });
-
-      const text = await response.text();
-      console.log(text);
-      const data = JSON.parse(text);
-
       if (!response.ok) {
-        alert(data.error);
-        return;
+        throw new Error("Code not valid");
       }
-
-      const petsResponse = await fetch("http://localhost:5000/pets");
-      const petsData = await petsResponse.json();
-      const adopted = {};
-      petsData.forEach((pet) => {
-        if (pet.adopted_by) {
-          adopted[pet.id] = pet.adopted_by;
-        }
-      });
-      setAdoptedPets(adopted);
-      setShowForm((prev) => ({ ...prev, [id]: false }));
-      setAdopteeName("");
-
+      const data = await response.json();
+      setAdoptedPets((prev) => ({ ...prev, [name]: { adopted_by: adopteeName, adopted_at: data.adopted_at } }));
       setShowConfetti(true);
+      setShowForm(""); // Close the form after submission
     } catch (error) {
-      alert("Error adopting pet: " + error.message);
+      alert("" + error.message);
     }
   };
 
-  const handleBackClick = (id) => {
-    setShowForm((prev) => ({ ...prev, [id]: false }));
+  const handleBackClick = () => {
+    setShowForm(""); // Close the form
   };
+
+  const groupPetsByCategory = (pets) => {
+    return pets.reduce((acc, pet) => {
+      if (!acc[pet.category]) {
+        acc[pet.category] = [];
+      }
+      acc[pet.category].push(pet);
+      return acc;
+    }, {});
+  };
+
+  const groupedPets = groupPetsByCategory(pets);
 
   return (
     <div>
@@ -124,35 +122,75 @@ export default function PetAdoption() {
           recycle={false}
         />
       )}
-      <div className="grid-container">
-        {pets.map((pet) => (
-          <div key={pet.id} className={`card ${adoptedPets[pet.id] ? "adopted" : ""}`}>
-            {adoptedPets[pet.id] && <div className="overlay">Adopted<div className="emoji">😊</div></div>}
-            {showForm[pet.id] ? (
-              <form
-                className="adoption-form"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleAdoptSubmit(pet.id, pet.name);
-                }}
-              >
-                <input
-                  type="text"
-                  placeholder="Your Name"
-                  value={adopteeName}
-                  onChange={(e) => setAdopteeName(e.target.value)}
-                />
-                <button type="submit">Submit</button>
-                <button type="button" onClick={() => handleBackClick(pet.id)}>Back</button>
-              </form>
-            ) : (
-              <>
-                <img src={pet.image} alt={pet.name} />
-                <h3>{pet.name}</h3>
-                <p>{pet.description}</p>
-                {!adoptedPets[pet.id] && <button onClick={() => handleAdoptClick(pet.id)}>Adopt</button>}
-              </>
-            )}
+      <div className="categories-container">
+        {categories.map((category) => (
+            <div key={category}>
+              <div className="category-section">
+              <ReactMarkdown>{category}</ReactMarkdown>
+              </div>
+            <div className="grid-container">
+              {groupedPets[category]?.map((pet, index) => (
+                <div key={pet.name} className={`card ${adoptedPets[pet.name] ? "adopted" : ""}`}>
+                  {adoptedPets[pet.name] && (
+                    <Link to={`/profile/${pet.name}`} className="overlay">
+                      Adopted
+                      <div className="adopted-at">{formatDate(adoptedPets[pet.name].adopted_at)}</div>
+                      <div className="emoji">😊</div>
+                    </Link>
+                  )}
+                  {showForm === pet.name ? (
+                    <form
+                      className="adoption-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleAdoptSubmit(pet.name);
+                      }}
+                    >
+                      <label>
+                        Your Name
+                        <input
+                          type="text"
+                          placeholder="Your Name"
+                          value={adopteeName}
+                          onChange={(e) => setAdopteeName(e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Adoption Token
+                        <input
+                          type="text"
+                          placeholder="Token"
+                          value={adoptionCode}
+                          onChange={(e) => setAdoptionCode(e.target.value)}
+                        />
+                      </label>
+                      <div className="form-buttons">
+                        <button type="submit">Adopt 🤍</button>
+                      </div>
+                      <button type="button" className="back-button" onClick={handleBackClick}>Back</button>
+                    </form>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div className="pet-image-container" style={{ backgroundColor: getColor(index) }}>
+                        <img src={pet.image} alt={pet.name} className="pet-image" />
+                        <div className="pet-name">{pet.name}</div>
+                      </div>
+                      <ReactMarkdown>{pet.description}</ReactMarkdown>
+                      <div className="card-buttons">
+                        <Link to={`/profile/${pet.name}`}>
+                          <button>View Profile</button>
+                        </Link>
+                        {!adoptedPets[pet.name] && (
+                          <button onClick={() => handleAdoptClick(pet.name)}>
+                            Adopt 🤍
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>

@@ -129,3 +129,21 @@
   .back-link:hover {
     color: gray;
   }
+
+  .category-list {
+    margin-bottom: 20px;
+  }
+  
+  .category-list ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .category-list li {
+    padding: 10px;
+    margin-bottom: 5px;
+    background-color: #f2f2f2;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    cursor: grab;
+  }
