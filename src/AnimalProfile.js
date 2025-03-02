@@ -10,7 +10,7 @@ export default function AnimalProfile() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${process.env.REACT_APP_API_URL}/${name}`)
+    fetch(`${process.env.REACT_APP_API_URL}/pets/${name}`)
       .then((res) => res.json())
       .then((data) => setAnimal(data))
       .catch((error) => console.error("Error fetching animal details:", error));
