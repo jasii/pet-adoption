@@ -35,6 +35,7 @@ RUN chmod +x entrypoint.sh
 
 # Expose port
 EXPOSE 5000
+EXPOSE 80
 
 # Run entrypoint script
 CMD ["./entrypoint.sh"]

@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "5000:5000"
+      - "80:80"
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    command: ["./entrypoint.sh"]
