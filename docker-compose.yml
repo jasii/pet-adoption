@@ -1,13 +1,20 @@
-version: '3.8'
+version: '3'
 
 services:
-  app:
-    build: .
+  pet-adoption:
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "5000:5000"
-      - "80:80"
-    env_file:
-      - .env
     volumes:
-      - .:/app
-    command: ["./entrypoint.sh"]
+      # Persist database and uploaded images
+      - ./pets.db:/app/backend/pets.db
+      - ./public/images:/app/public/images
+    environment:
+      - PORT=5000
+      # Use the values from .env file
+      - REACT_APP_ADMIN_PASSWORD=${REACT_APP_ADMIN_PASSWORD}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+    restart: unless-stopped
