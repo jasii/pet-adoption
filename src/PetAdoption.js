@@ -20,8 +20,12 @@ export default function PetAdoption() {
   const [adoptedPets, setAdoptedPets] = useState({});
   const [showForm, setShowForm] = useState(""); // Change to store a single string value
   const [adopteeName, setAdopteeName] = useState("");
+  const [userIp, setUserIp] = useState("");
   const [pets, setPets] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [pageTitle, setPageTitle] = useState("");
+  const [pageDescription, setPageDescription] = useState("");
+  const [websiteTitle, setWebsiteTitle] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const { width, height } = useWindowSize();
   const [adoptionCode, setAdoptionCode] = useState('');
