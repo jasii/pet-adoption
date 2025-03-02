@@ -7,7 +7,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 
-# Copy frontend source code
+# Copy frontend source code and environment files
+COPY .env* ./
 COPY public/ ./public/
 COPY src/ ./src/
 
@@ -21,7 +22,7 @@ WORKDIR /app
 
 # Install dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # Create directory for uploaded images
 RUN mkdir -p public/images
@@ -39,11 +40,17 @@ COPY --from=frontend-build /app/build ./build
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_ENV=production
 
-# Set the working directory to where app.py is located
-WORKDIR /app/backend
+# Set the working directory
+WORKDIR /app
 
-# Expose the port the app runs on
+# Create a startup script
+RUN echo '#!/bin/bash\n\
+cd /app/backend\n\
+gunicorn --bind 0.0.0.0:5000 app:app' > /app/start.sh && \
+chmod +x /app/start.sh
+
+# Expose the port
 EXPOSE 5000
 
 # Command to run the app
-CMD ["python", "app.py"]
+CMD ["/app/start.sh"]

@@ -83,7 +83,7 @@ export default function Admin() {
 
   const fetchAnimals = async () => {
     try {
-      const response = await fetch("http://localhost:5000/pets");
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/pets`);
       if (!response.ok) {
         throw new Error("Failed to fetch animals");
       }
@@ -96,20 +96,20 @@ export default function Admin() {
   };
 
   const fetchPageDetails = async () => {
-    const response = await fetch("http://localhost:5000/page-details");
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/page-details`);
     const data = await response.json();
     setPageTitle(data.title);
     setPageDescription(data.description);
   };
 
   const fetchWebsiteTitle = async () => {
-    const response = await fetch("http://localhost:5000/website-title");
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/website-title`);
     const data = await response.json();
     setWebsiteTitle(data.title);
   };
 
   const fetchCategories = async () => {
-    const response = await fetch("http://localhost:5000/categories");
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/categories`);
     const data = await response.json();
     setCategories(data);
   };
@@ -124,7 +124,7 @@ export default function Admin() {
     formData.append("category", category || newCategory);
     formData.append("image", imageFile);
 
-    const response = await fetch("http://localhost:5000/add-animal", {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/add-animal`, {
       method: "POST",
       body: formData,
     });
@@ -142,7 +142,7 @@ export default function Admin() {
   };
 
   const handleRemoveAnimal = async (id) => {
-    const response = await fetch(`http://localhost:5000/remove-animal/${id}`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/remove-animal/${id}`, {
       method: "DELETE",
     });
     if (response.ok) {
@@ -173,7 +173,7 @@ export default function Admin() {
       formData.append("image", imageFile);
     }
 
-    const response = await fetch(`http://localhost:5000/update-animal/${editAnimal.id}`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/update-animal/${editAnimal.id}`, {
       method: "PUT",
       body: formData,
     });
@@ -192,7 +192,7 @@ export default function Admin() {
   };
 
   const handleUpdatePageDetails = async () => {
-    const response = await fetch("http://localhost:5000/update-page-details", {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/update-page-details`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: pageTitle, description: pageDescription }),
@@ -205,7 +205,7 @@ export default function Admin() {
   };
 
   const handleUpdateWebsiteTitle = async () => {
-    const response = await fetch("http://localhost:5000/update-website-title", {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/update-website-title`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: websiteTitle }),
@@ -218,7 +218,7 @@ export default function Admin() {
   };
 
   const handleUnadoptAnimal = async (id) => {
-    const response = await fetch(`http://localhost:5000/unadopt-animal/${id}`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/unadopt-animal/${id}`, {
       method: "PUT",
     });
     if (response.ok) {
@@ -236,7 +236,7 @@ export default function Admin() {
   };
 
   const saveCategoryOrder = async () => {
-    const response = await fetch("http://localhost:5000/update-category-order", {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/update-category-order`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ categories }),
@@ -249,7 +249,7 @@ export default function Admin() {
   };
 
   const deleteCategory = async (category) => {
-    const response = await fetch(`http://localhost:5000/delete-category/${category}`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/delete-category/${category}`, {
       method: "DELETE",
     });
     if (response.ok) {

@@ -14,7 +14,7 @@ function App() {
 
   useEffect(() => {
     const fetchPageDetails = async () => {
-      const response = await fetch("http://localhost:5000/page-details");
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/page-details`);
       const data = await response.json();
       setPageTitle(data.title);
       setPageDescription(data.description);
@@ -25,7 +25,7 @@ function App() {
 
   useEffect(() => {
     const fetchWebsiteTitle = async () => {
-      const response = await fetch("http://localhost:5000/website-title");
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/website-title`);
       const data = await response.json();
       setWebsiteTitle(data.title);
     };

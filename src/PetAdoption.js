@@ -31,12 +31,12 @@ export default function PetAdoption() {
   const [adoptionCode, setAdoptionCode] = useState('');
 
   useEffect(() => {
-    fetch("http://localhost:5000/get-ip")
+    fetch(`${process.env.REACT_APP_API_URL}/get-ip`)
       .then((response) => response.json())
       .then((data) => setUserIp(data.ip))
       .catch((error) => console.error("Error fetching IP:", error));
 
-    fetch("http://localhost:5000/pets")
+    fetch(`${process.env.REACT_APP_API_URL}/pets`)
       .then((res) => res.json())
       .then((data) => {
         const adopted = {};
@@ -50,7 +50,7 @@ export default function PetAdoption() {
       })
       .catch((error) => console.error("Error fetching adoption status:", error));
 
-    fetch("http://localhost:5000/page-details")
+    fetch(`${process.env.REACT_APP_API_URL}/page-details`)
       .then((res) => res.json())
       .then((data) => {
         setPageTitle(data.title);
@@ -58,12 +58,12 @@ export default function PetAdoption() {
       })
       .catch((error) => console.error("Error fetching page details:", error));
 
-    fetch("http://localhost:5000/website-title")
+    fetch(`${process.env.REACT_APP_API_URL}/website-title`)
       .then((res) => res.json())
       .then((data) => setWebsiteTitle(data.title))
       .catch((error) => console.error("Error fetching website title:", error));
 
-    fetch("http://localhost:5000/categories")
+    fetch(`${process.env.REACT_APP_API_URL}/categories`)
       .then((res) => res.json())
       .then((data) => setCategories(data))
       .catch((error) => console.error("Error fetching categories:", error));
@@ -75,7 +75,7 @@ export default function PetAdoption() {
 
   const handleAdoptSubmit = async (name) => {
     try {
-      const response = await fetch("http://localhost:5000/adopt", {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/adopt`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

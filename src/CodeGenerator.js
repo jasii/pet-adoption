@@ -13,14 +13,14 @@ export default function CodeGenerator() {
   }, []);
 
   const fetchCodes = async () => {
-    const response = await fetch("http://localhost:5000/codes");
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/codes`);
     const data = await response.json();
     setCodes(data);
   };
 
   const handleAddCode = async (e) => {
     e.preventDefault();
-    const response = await fetch("http://localhost:5000/add-code", {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/add-code`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -38,7 +38,7 @@ export default function CodeGenerator() {
   };
 
   const handleDeleteCode = async (id) => {
-    const response = await fetch(`http://localhost:5000/delete-code/${id}`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/delete-code/${id}`, {
       method: "DELETE",
     });
     if (response.ok) {

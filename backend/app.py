@@ -11,6 +11,9 @@ load_dotenv()
 
 app = Flask(__name__, static_folder="../build", static_url_path="/")
 
+# Add an API URL prefix for all endpoints
+api_url_prefix = "/api"
+
 # Initialize database
 def init_db():
     with sqlite3.connect("pets.db") as conn:
@@ -97,7 +100,7 @@ def initialize_database():
 def static_proxy(path):
     return send_from_directory(app.static_folder, path)
 
-@app.route("/pets", methods=["GET"])
+@app.route(f"{api_url_prefix}/pets", methods=["GET"])
 def get_pets():
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -119,7 +122,7 @@ def get_pets():
         ]
         return jsonify(pets_list)
 
-@app.route("/pets/<int:id>", methods=["GET"])
+@app.route(f"{api_url_prefix}/pets/<int:id>", methods=["GET"])
 def get_pet_by_id(id):
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -141,7 +144,7 @@ def get_pet_by_id(id):
         else:
             return jsonify({"error": "Pet not found"}), 404
 
-@app.route("/pets/<name>", methods=["GET"])
+@app.route(f"{api_url_prefix}/pets/<name>", methods=["GET"])
 def get_pet(name):
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -163,7 +166,7 @@ def get_pet(name):
         else:
             return jsonify({"error": "Pet not found"}), 404
 
-@app.route("/check-adoption/<ip>", methods=["GET"])
+@app.route(f"{api_url_prefix}/check-adoption/<ip>", methods=["GET"])
 def check_adoption(ip):
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -171,7 +174,7 @@ def check_adoption(ip):
         pet = cursor.fetchone()
         return jsonify({"hasAdopted": pet is not None})
 
-@app.route("/adopt", methods=["POST"])
+@app.route(f"{api_url_prefix}/adopt", methods=["POST"])
 def adopt_pet():
     data = request.json
     pet_name = data["name"]
@@ -215,12 +218,12 @@ def adopt_pet():
         print(response.get_data(as_text=True))  # Log the response content
         return response
 
-@app.route("/get-ip", methods=["GET"])
+@app.route(f"{api_url_prefix}/get-ip", methods=["GET"])
 def get_ip():
     ip = request.remote_addr
     return jsonify({"ip": ip})
 
-@app.route("/add-animal", methods=["POST"])
+@app.route(f"{api_url_prefix}/add-animal", methods=["POST"])
 def add_animal():
     name = request.form["name"]
     description = request.form["description"]
@@ -237,7 +240,7 @@ def add_animal():
         conn.commit()
         return jsonify({"id": cursor.lastrowid})
 
-@app.route("/remove-animal/<int:id>", methods=["DELETE"])
+@app.route(f"{api_url_prefix}/remove-animal/<int:id>", methods=["DELETE"])
 def remove_animal(id):
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -245,7 +248,7 @@ def remove_animal(id):
         conn.commit()
         return jsonify({"deleted": cursor.rowcount})
 
-@app.route("/update-animal/<int:id>", methods=["PUT"])
+@app.route(f"{api_url_prefix}/update-animal/<int:id>", methods=["PUT"])
 def update_animal(id):
     name = request.form["name"]
     description = request.form["description"]
@@ -268,7 +271,7 @@ def update_animal(id):
         conn.commit()
         return jsonify({"updated": cursor.rowcount})
 
-@app.route("/page-details", methods=["GET"])
+@app.route(f"{api_url_prefix}/page-details", methods=["GET"])
 def get_page_details():
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -279,7 +282,7 @@ def get_page_details():
         else:
             return jsonify({"title": "", "description": ""})
 
-@app.route("/update-page-details", methods=["PUT"])
+@app.route(f"{api_url_prefix}/update-page-details", methods=["PUT"])
 def update_page_details():
     data = request.json
     title = data["title"]
@@ -291,7 +294,7 @@ def update_page_details():
         conn.commit()
         return jsonify({"updated": cursor.rowcount})
 
-@app.route("/website-title", methods=["GET"])
+@app.route(f"{api_url_prefix}/website-title", methods=["GET"])
 def get_website_title():
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -302,7 +305,7 @@ def get_website_title():
         else:
             return jsonify({"title": ""})
 
-@app.route("/update-website-title", methods=["PUT"])
+@app.route(f"{api_url_prefix}/update-website-title", methods=["PUT"])
 def update_website_title():
     data = request.json
     title = data["title"]
@@ -313,7 +316,7 @@ def update_website_title():
         conn.commit()
         return jsonify({"updated": cursor.rowcount})
     
-@app.route("/add-category", methods=["POST"])
+@app.route(f"{api_url_prefix}/add-category", methods=["POST"])
 def add_category():
     data = request.json
     category = data["category"]
@@ -324,7 +327,7 @@ def add_category():
         conn.commit()
         return jsonify({"message": "Category added successfully"})
     
-@app.route("/categories", methods=["GET"])
+@app.route(f"{api_url_prefix}/categories", methods=["GET"])
 def get_categories():
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -332,7 +335,7 @@ def get_categories():
         categories = [row[0] for row in cursor.fetchall()]
         return jsonify(categories)
 
-@app.route("/update-category-order", methods=["PUT"])
+@app.route(f"{api_url_prefix}/update-category-order", methods=["PUT"])
 def update_category_order():
     data = request.json
     categories = data["categories"]
@@ -344,7 +347,7 @@ def update_category_order():
         conn.commit()
         return jsonify({"message": "Category order updated successfully"})
 
-@app.route("/unadopt-animal/<int:id>", methods=["PUT"])
+@app.route(f"{api_url_prefix}/unadopt-animal/<int:id>", methods=["PUT"])
 def unadopt_animal(id):
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -352,7 +355,7 @@ def unadopt_animal(id):
         conn.commit()
         return jsonify({"updated": cursor.rowcount})
 
-@app.route("/delete-category/<category>", methods=["DELETE"])
+@app.route(f"{api_url_prefix}/delete-category/<category>", methods=["DELETE"])
 def delete_category(category):
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -360,7 +363,7 @@ def delete_category(category):
         conn.commit()
         return jsonify({"message": "Category deleted successfully"})
     
-@app.route("/codes", methods=["GET"])
+@app.route(f"{api_url_prefix}/codes", methods=["GET"])
 def get_codes():
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
@@ -377,7 +380,7 @@ def get_codes():
         ]
         return jsonify(codes_list)
 
-@app.route("/add-code", methods=["POST"])
+@app.route(f"{api_url_prefix}/add-code", methods=["POST"])
 def add_code():
     data = request.json
     name = data["name"]
@@ -390,7 +393,7 @@ def add_code():
         conn.commit()
         return jsonify({"id": cursor.lastrowid})
     
-@app.route("/delete-code/<int:code_id>", methods=["DELETE"])
+@app.route(f"{api_url_prefix}/delete-code/<int:code_id>", methods=["DELETE"])
 def delete_code(code_id):
     with sqlite3.connect("pets.db") as conn:
         cursor = conn.cursor()
